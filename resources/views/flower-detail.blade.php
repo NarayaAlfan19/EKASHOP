@@ -1,10 +1,15 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" x-data="{ isOpen: false, activeImage: '' }">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $flower->meta_title ?? $flower->name }} - EKASHOP</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tambahkan Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
 </head>
 <body class="bg-[#0A0A0A] text-[#F5F0E6] font-sans antialiased selection:bg-[#C9A24B] selection:text-black">
 
@@ -14,7 +19,7 @@
             <a href="{{ route('home') }}" class="text-3xl font-serif tracking-widest bg-gradient-to-r from-[#C9A24B] to-[#E3C16F] bg-clip-text text-transparent">EKASHOP</a>
             
             <div class="flex items-center space-x-6">
-                <a href="{{ route('home') }}" class="text-[#A8A29E] hover:text-[#C9A24B] font-medium transition">&larr; Kembali ke Katalog</a>
+                <a href="{{ route('home') }}" class="text-[#A8A29E] hover:text-[#C9A24B] font-medium transition">← Kembali ke Katalog</a>
 
                 <!-- Ikon Keranjang di Navbar Detail Produk -->
                 <a href="{{ route('cart.index') }}" class="relative p-2 text-[#A8A29E] hover:text-[#C9A24B] transition duration-300 group flex items-center">
@@ -43,7 +48,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
             <div class="bg-emerald-950/80 border border-emerald-500 text-emerald-200 p-4 rounded-xl text-sm flex items-center justify-between shadow-lg">
                 <span>{{ session('success') }}</span>
-                <a href="{{ route('cart.index') }}" class="underline font-bold hover:text-white transition">Lihat Keranjang &rarr;</a>
+                <a href="{{ route('cart.index') }}" class="underline font-bold hover:text-white transition">Lihat Keranjang →</a>
             </div>
         </div>
     @endif
@@ -53,9 +58,18 @@
             
             <!-- Galeri Foto -->
             <div>
-                <div class="h-96 bg-[#0A0A0A] rounded-xl overflow-hidden mb-4 border border-[#262626] flex items-center justify-center">
+                <div class="h-96 bg-[#0A0A0A] rounded-xl overflow-hidden mb-4 border border-[#262626] flex items-center justify-center relative group">
                     @if($flower->primaryImage)
-                        <img src="{{ asset('storage/' . $flower->primaryImage->path) }}" alt="{{ $flower->name }}" class="w-full h-full object-cover">
+                        <!-- Tambahkan event @click untuk membuka modal lightbox -->
+                        <img src="{{ asset('storage/' . $flower->primaryImage->path) }}" 
+                             alt="{{ $flower->name }}" 
+                             class="w-full h-full object-cover cursor-pointer hover:scale-105 transition duration-300"
+                             @click="isOpen = true; activeImage = '{{ asset('storage/' . $flower->primaryImage->path) }}'">
+                        
+                        <!-- Petunjuk kecil saat kursor diarahkan ke gambar -->
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center pointer-events-none text-xs text-[#C9A24B] font-semibold tracking-wider uppercase">
+                            Klik untuk memperbesar
+                        </div>
                     @else
                         <div class="flex items-center justify-center h-full text-[#A8A29E]/50">No Image Available</div>
                     @endif
@@ -149,6 +163,22 @@
             </div>
         @endif
     </main>
+
+    <!-- MODAL LIGHTBOX FULLSCREEN -->
+    <div x-show="isOpen" 
+         x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-sm"
+         @click.self="isOpen = false"
+         @keydown.escape.window="isOpen = false">
+        
+        <div class="relative max-w-5xl w-full max-h-[90vh] flex items-center justify-center">
+            <!-- Tombol Close (X) -->
+            <button @click="isOpen = false" class="absolute -top-12 right-0 text-[#F5F0E6] hover:text-[#C9A24B] text-4xl font-light transition">×</button>
+            
+            <!-- Gambar Full Size -->
+            <img :src="activeImage" class="max-w-full max-h-[85vh] object-contain rounded-xl border border-[#C9A24B]/30 shadow-2xl">
+        </div>
+    </div>
 
 </body>
 </html>

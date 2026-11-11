@@ -8,10 +8,6 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
-// use App\Http\Controllers\CatalogController;
-// use App\Http\Controllers\RecommendationController;
-// use App\Http\Controllers\BranchController;
-// use App\Http\Controllers\PageController;
 
 // ==========================================
 // CONTROLLERS ADMIN (Tetap di dalam folder Admin)
@@ -28,6 +24,13 @@ use App\Http\Controllers\Admin\BranchController as AdminBranchController;
 use App\Http\Controllers\Admin\BranchStockController;
 use App\Http\Controllers\Admin\InquiryController;
 use App\Http\Controllers\Admin\SettingController;
+
+// ==========================================
+// ALIAS ROUTE LOGIN GLOBAL (Mengatasi error Route [login] not defined saat logout)
+// ==========================================
+Route::get('/login', function () {
+    return redirect()->route('admin.login');
+})->name('login');
 
 // ==========================================
 // 1. ROUTE PUBLIK (Pengunjung Tanpa Login)

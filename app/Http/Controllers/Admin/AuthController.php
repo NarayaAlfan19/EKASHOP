@@ -54,6 +54,7 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('admin.login');
+        // Diubah agar langsung mengarah ke halaman utama website (home)
+        return redirect()->route('home');
     }
 }

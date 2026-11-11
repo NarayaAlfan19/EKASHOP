@@ -12,10 +12,14 @@ class HomeController extends Controller
 {
     public function index(Request $request)
     {
-        // Ambil data untuk filter di halaman depan
+        // Ambil data kategori
         $categories = Category::all();
-        $occasions = Occasion::all();
         $branches = Branch::where('is_active', true)->get();
+
+        // Ambil data acara (occasion) yang hanya memiliki produk aktif
+        $occasions = Occasion::whereHas('flowers', function($q) {
+            $q->where('status', 'active');
+        })->get();
 
         // Query produk bunga dengan relasi
         $query = Flower::with(['primaryImage', 'category', 'occasions'])
