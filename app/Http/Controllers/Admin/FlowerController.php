@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Flower;
 use App\Models\FlowerImage;
+use App\Models\FlowerVariant;
 use App\Models\Category;
 use App\Models\Occasion;
 use App\Models\Color;
@@ -19,7 +20,7 @@ class FlowerController extends Controller
 {
     public function index()
     {
-        $flowers = Flower::with('category')->latest()->paginate(15);
+        $flowers = Flower::with(['category', 'variants'])->latest()->paginate(15);
         return view('admin.flowers.index', compact('flowers'));
     }
 
@@ -46,6 +47,10 @@ class FlowerController extends Controller
             'status' => 'required|in:draft,active,sold_out',
             'is_featured' => 'boolean',
             'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:2048',
+            // Validasi Varian (Tanpa Gambar)
+            'variants' => 'nullable|array',
+            'variants.*.name' => 'required|string|max:50',
+            'variants.*.price' => 'required|integer|min:1',
         ]);
 
         DB::beginTransaction();
@@ -69,6 +74,7 @@ class FlowerController extends Controller
                 'is_featured' => $request->has('is_featured'),
             ]);
 
+            // Simpan Gambar Utama Produk
             if ($request->hasFile('images')) {
                 foreach ($request->file('images') as $index => $file) {
                     $path = $imageService->uploadAndProcess($file);
@@ -77,6 +83,18 @@ class FlowerController extends Controller
                         'path' => $path,
                         'is_primary' => $index === 0,
                         'sort_order' => $index + 1
+                    ]);
+                }
+            }
+
+            // Simpan Varian Produk (Nama & Harga saja)
+            if ($request->has('variants')) {
+                foreach ($request->variants as $varData) {
+                    FlowerVariant::create([
+                        'flower_id' => $flower->id,
+                        'name' => $varData['name'],
+                        'price' => $varData['price'],
+                        'image' => null, // Dikosongkan karena tidak pakai foto varian
                     ]);
                 }
             }
@@ -91,7 +109,7 @@ class FlowerController extends Controller
 
     public function edit($id)
     {
-        $flower = Flower::with('images')->findOrFail($id);
+        $flower = Flower::with(['images', 'variants'])->findOrFail($id);
         $categories = Category::all();
         $occasions = Occasion::all();
         $colors = Color::all();
@@ -115,6 +133,11 @@ class FlowerController extends Controller
             'status' => 'required|in:draft,active,sold_out',
             'is_featured' => 'boolean',
             'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:2048',
+            // Validasi Varian saat update (Tanpa Gambar)
+            'variants' => 'nullable|array',
+            'variants.*.id' => 'nullable|exists:flower_variants,id',
+            'variants.*.name' => 'required|string|max:50',
+            'variants.*.price' => 'required|integer|min:1',
         ]);
 
         DB::beginTransaction();
@@ -130,17 +153,49 @@ class FlowerController extends Controller
                 'is_featured' => $request->has('is_featured'),
             ]);
 
+            // Tambah Gambar Utama Baru (jika di-upload)
             if ($request->hasFile('images')) {
+                $flower->images()->update(['is_primary' => false]);
+
                 foreach ($request->file('images') as $index => $file) {
                     $path = $imageService->uploadAndProcess($file);
+                    
                     FlowerImage::create([
                         'flower_id' => $flower->id,
                         'path' => $path,
-                        'is_primary' => $flower->images()->count() === 0,
+                        'is_primary' => $index === 0,
                         'sort_order' => $flower->images()->count() + 1
                     ]);
                 }
             }
+
+            // Sinkronisasi Varian (Nama & Harga saja)
+            $submittedVariantIds = [];
+            if ($request->has('variants')) {
+                foreach ($request->variants as $varData) {
+                    if (isset($varData['id']) && $varData['id']) {
+                        $variant = FlowerVariant::where('flower_id', $flower->id)->find($varData['id']);
+                        if ($variant) {
+                            $variant->update([
+                                'name' => $varData['name'],
+                                'price' => $varData['price'],
+                            ]);
+                            $submittedVariantIds[] = $variant->id;
+                        }
+                    } else {
+                        $newVariant = FlowerVariant::create([
+                            'flower_id' => $flower->id,
+                            'name' => $varData['name'],
+                            'price' => $varData['price'],
+                            'image' => null,
+                        ]);
+                        $submittedVariantIds[] = $newVariant->id;
+                    }
+                }
+            }
+
+            // Hapus varian yang dihapus oleh admin di form
+            $flower->variants()->whereNotIn('id', $submittedVariantIds)->delete();
 
             DB::commit();
             return redirect()->route('admin.bunga.index')->with('success', 'Bunga berhasil diperbarui.');

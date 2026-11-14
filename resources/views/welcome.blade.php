@@ -23,10 +23,13 @@
                 EKASHOP
             </a>
             <div class="flex items-center space-x-6">
-                <a href="#" class="text-sm font-medium text-[#A8A29E] hover:text-[#C9A24B] transition duration-300">Bantu Saya Memilih</a>
+                <!-- Tombol "Bantu Saya Memilih" diberi gaya highlight (menonjol) -->
+                <a href="#" class="relative z-50 bg-[#C9A24B] text-black font-semibold px-4 py-2 rounded-md hover:bg-[#E3C16F] transition text-xs uppercase tracking-wider shadow-[0_0_15px_rgba(201,162,75,0.2)]">
+                    Bantu Saya Memilih
+                </a>
                 
-                <!-- Tombol Login Admin di Pojok Kanan Atas -->
-                <a href="{{ route('admin.login') }}" class="bg-[#C9A24B] text-black font-semibold px-4 py-2 rounded-md hover:bg-[#E3C16F] transition text-xs uppercase tracking-wider shadow-[0_0_15px_rgba(201,162,75,0.2)]">
+                <!-- Login Admin diubah menjadi teks biasa -->
+                <a href="{{ route('admin.login') }}" class="text-sm font-medium text-[#A8A29E] hover:text-[#C9A24B] transition duration-300">
                     Login Admin
                 </a>
 
@@ -165,9 +168,13 @@
                         <div class="bg-[#141414] border border-[#262626] hover:border-[#C9A24B]/70 hover:shadow-[0_0_25px_rgba(201,162,75,0.05)] transition-all duration-300 rounded-xl overflow-hidden group flex flex-col">
                             <a href="{{ route('flower.show', $flower->slug) }}" class="flex-grow flex flex-col">
                                 <div class="aspect-[4/5] bg-[#0A0A0A] relative overflow-hidden flex items-center justify-center">
-                                    @if($flower->primaryImage)
-                                        <!-- Pastikan jalur asset storage terpanggil dengan benar -->
-                                        <img src="{{ asset('storage/' . $flower->primaryImage->path) }}" alt="{{ $flower->name }}" loading="lazy" class="object-cover w-full h-full group-hover:scale-110 transition duration-700 ease-out opacity-90 group-hover:opacity-100">
+                                    @php
+                                        // Bersihkan path dari awalan public/ atau storage/ agar URL bersih dan valid
+                                        $cleanPath = $flower->primaryImage ? str_replace(['public/', 'storage/'], '', $flower->primaryImage->path) : null;
+                                    @endphp
+
+                                    @if($cleanPath)
+                                        <img src="{{ asset('storage/' . $cleanPath) }}" alt="{{ $flower->name }}" loading="lazy" class="object-cover w-full h-full group-hover:scale-110 transition duration-700 ease-out opacity-90 group-hover:opacity-100">
                                     @else
                                         <div class="w-full h-full flex flex-col items-center justify-center text-[#A8A29E]/50">
                                             <svg class="w-10 h-10 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>

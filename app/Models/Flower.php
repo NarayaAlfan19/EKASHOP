@@ -4,18 +4,28 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Flower extends Model
 {
-    use SoftDeletes;
+    // Menggunakan soft delete agar referensi di inquiry_items tetap aman (NFR-013)
+    use SoftDeletes; 
 
     protected $fillable = [
-        'category_id', 'name', 'slug', 'description', 'price', 
-        'discount_price', 'size', 'status', 'is_featured', 
-        'meta_title', 'meta_description'
+        'category_id', 
+        'name', 
+        'slug', 
+        'description', 
+        'price', 
+        'discount_price', 
+        'size', 
+        'status', 
+        'is_featured', 
+        'meta_title', 
+        'meta_description'
     ];
 
     protected $casts = [
@@ -24,20 +34,37 @@ class Flower extends Model
         'discount_price' => 'integer',
     ];
 
+    /**
+     * RELASI UTAMA
+     */
+    
+    // Relasi ke semua gambar bunga
+    public function images(): HasMany
+    {
+        return $this->hasMany(FlowerImage::class)->orderBy('sort_order');
+    }
+
+    // Relasi khusus untuk mengambil satu gambar utama (dipakai di HomeController katalog)
+    public function primaryImage(): HasOne
+    {
+        return $this->hasOne(FlowerImage::class)->where('is_primary', true);
+    }
+
+    // Relasi ke kategori
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
     }
 
-    public function images(): HasMany
+    // Relasi ke varian produk (pilihan model A, B, C, dll)
+    public function variants(): HasMany
     {
-        return $this->hasMany(FlowerImage::class);
+        return $this->hasMany(FlowerVariant::class);
     }
 
-    public function primaryImage()
-    {
-        return $this->hasOne(FlowerImage::class)->where('is_primary', true);
-    }
+    /**
+     * RELASI PIVOT (Atribut M:N)
+     */
 
     public function occasions(): BelongsToMany
     {
@@ -49,7 +76,7 @@ class Flower extends Model
         return $this->belongsToMany(Color::class, 'flower_color');
     }
 
-    public function flowerTypes(): BelongsToMany
+    public function types(): BelongsToMany
     {
         return $this->belongsToMany(FlowerType::class, 'flower_flower_type');
     }
@@ -59,13 +86,14 @@ class Flower extends Model
         return $this->belongsToMany(Tag::class, 'flower_tag');
     }
 
+    /**
+     * RELASI CABANG & KETERSEDIAAN
+     */
+    
+    // Relasi ke cabang dengan memuat status ketersediaan (is_available)
     public function branches(): BelongsToMany
     {
-        return $this->belongsToMany(Branch::class, 'branch_flower')->withPivot('is_available');
-    }
-
-    public function inquiryItems(): HasMany
-    {
-        return $this->hasMany(InquiryItem::class);
+        return $this->belongsToMany(Branch::class, 'branch_flower')
+                    ->withPivot('is_available');
     }
 }

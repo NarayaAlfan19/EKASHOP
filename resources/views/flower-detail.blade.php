@@ -1,11 +1,30 @@
+@php
+    $primaryImgUrl = $flower->primaryImage ? asset('storage/' . $flower->primaryImage->path) : '';
+    $firstVariant = $flower->variants->first();
+    
+    // Tentukan gambar awal (jika varian pertama punya gambar, pakai itu. Jika tidak, pakai gambar utama)
+    $initialImg = ($firstVariant && $firstVariant->image) ? asset('storage/' . $firstVariant->image) : $primaryImgUrl;
+    $initialPrice = number_format($firstVariant ? $firstVariant->price : ($flower->discount_price ?? $flower->price), 0, ',', '.');
+    $initialId = $firstVariant ? $firstVariant->id : '';
+@endphp
+
 <!DOCTYPE html>
-<html lang="id" x-data="{ isOpen: false, activeImage: '' }">
+<html lang="id" x-data="{ 
+    isOpen: false, 
+    activeImage: '{{ $initialImg }}',
+    currentPrice: '{{ $initialPrice }}',
+    selectedVariant: '{{ $initialId }}',
+    selectVariant(price, image, id) {
+        this.currentPrice = new Intl.NumberFormat('id-ID').format(price);
+        this.activeImage = image;
+        this.selectedVariant = id;
+    }
+}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $flower->meta_title ?? $flower->name }} - EKASHOP</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Tambahkan Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
         [x-cloak] { display: none !important; }
@@ -56,23 +75,24 @@
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div class="bg-[#141414] rounded-2xl shadow-xl border border-[#262626] overflow-hidden grid grid-cols-1 md:grid-cols-2 gap-8 p-8">
             
-            <!-- Galeri Foto -->
+            <!-- Galeri Foto (Dinamis Berubah Sesuai Varian yang Dipilih) -->
             <div>
                 <div class="h-96 bg-[#0A0A0A] rounded-xl overflow-hidden mb-4 border border-[#262626] flex items-center justify-center relative group">
-                    @if($flower->primaryImage)
-                        <!-- Tambahkan event @click untuk membuka modal lightbox -->
-                        <img src="{{ asset('storage/' . $flower->primaryImage->path) }}" 
+                    <!-- Tampilkan gambar jika activeImage memiliki isi path URL -->
+                    <template x-if="activeImage">
+                        <img :src="activeImage" 
                              alt="{{ $flower->name }}" 
                              class="w-full h-full object-cover cursor-pointer hover:scale-105 transition duration-300"
-                             @click="isOpen = true; activeImage = '{{ asset('storage/' . $flower->primaryImage->path) }}'">
-                        
-                        <!-- Petunjuk kecil saat kursor diarahkan ke gambar -->
-                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center pointer-events-none text-xs text-[#C9A24B] font-semibold tracking-wider uppercase">
-                            Klik untuk memperbesar
-                        </div>
-                    @else
+                             @click="isOpen = true">
+                    </template>
+
+                    <template x-if="!activeImage">
                         <div class="flex items-center justify-center h-full text-[#A8A29E]/50">No Image Available</div>
-                    @endif
+                    </template>
+                    
+                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center pointer-events-none text-xs text-[#C9A24B] font-semibold tracking-wider uppercase" x-show="activeImage">
+                        Klik untuk memperbesar
+                    </div>
                 </div>
             </div>
 
@@ -81,16 +101,38 @@
                 <span class="text-xs uppercase tracking-wider text-[#C9A24B] font-semibold bg-[#0A0A0A] border border-[#C9A24B]/30 px-3 py-1 rounded-full">{{ $flower->category->name }}</span>
                 <h1 class="text-3xl font-serif text-[#F5F0E6] mt-3">{{ $flower->name }}</h1>
                 
+                <!-- Harga Dinamis Berdasarkan Varian -->
                 <div class="mt-4 flex items-baseline gap-3">
-                    @if($flower->discount_price)
-                        <span class="text-2xl font-bold text-[#C9A24B]">Rp {{ number_format($flower->discount_price, 0, ',', '.') }}</span>
+                    <span class="text-2xl font-bold text-[#C9A24B]">Rp <span x-text="currentPrice"></span></span>
+                    @if($flower->discount_price && $flower->variants->count() === 0)
                         <span class="text-[#A8A29E]/60 line-through text-lg">Rp {{ number_format($flower->price, 0, ',', '.') }}</span>
-                    @else
-                        <span class="text-2xl font-bold text-[#C9A24B]">Rp {{ number_format($flower->price, 0, ',', '.') }}</span>
                     @endif
                 </div>
 
                 <p class="text-[#A8A29E] mt-6 leading-relaxed">{{ $flower->description }}</p>
+
+                <!-- Pilihan Varian (Model A, B, C, dll) -->
+                @if($flower->variants->count() > 0)
+                    <div class="mt-6 border-t border-[#262626] pt-6">
+                        <label class="block text-xs font-semibold text-[#A8A29E] mb-3 uppercase tracking-widest">
+                            Pilih Varian / Model:
+                        </label>
+                        <div class="flex flex-wrap gap-3">
+                            @foreach($flower->variants as $variant)
+                                @php
+                                    // Fallback: Jika varian punya foto, pakai foto varian. Jika kosong, pakai foto utama produk.
+                                    $variantImgUrl = $variant->image ? asset('storage/' . $variant->image) : $primaryImgUrl;
+                                @endphp
+                                <button type="button" 
+                                    @click="selectVariant({{ $variant->price }}, '{{ $variantImgUrl }}', '{{ $variant->id }}')"
+                                    :class="selectedVariant == '{{ $variant->id }}' ? 'bg-[#C9A24B] text-black font-bold shadow-[0_0_15px_rgba(201,162,75,0.3)]' : 'bg-[#0A0A0A] text-[#F5F0E6] border border-[#262626] hover:border-[#C9A24B]'"
+                                    class="px-4 py-2 rounded-lg text-sm transition duration-200">
+                                    {{ $variant->name }} (Rp {{ number_format($variant->price, 0, ',', '.') }})
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
 
                 <div class="mt-6 border-t border-[#262626] pt-6 space-y-3">
                     @if($flower->size)
@@ -125,6 +167,8 @@
                         @csrf
                         <input type="hidden" name="flower_id" value="{{ $flower->id }}">
                         <input type="hidden" name="quantity" value="1">
+                        <!-- Kirim ID Varian yang dipilih user -->
+                        <input type="hidden" name="variant_id" x-model="selectedVariant">
                         
                         <button type="submit" class="w-full bg-[#C9A24B] hover:bg-[#E3C16F] text-black font-bold py-3.5 px-6 rounded-xl shadow-[0_0_15px_rgba(201,162,75,0.2)] transition duration-300 flex items-center justify-center gap-2 uppercase tracking-wider text-sm">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

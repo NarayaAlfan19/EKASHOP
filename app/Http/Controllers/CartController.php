@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Flower;
+use App\Models\FlowerVariant;
 
 class CartController extends Controller
 {
@@ -16,19 +17,43 @@ class CartController extends Controller
     public function update(Request $request)
     {
         $flowerId = $request->flower_id;
-        $quantity = $request->quantity ?? 1;
+        $variantId = $request->variant_id ?? null;
+        $quantity = (int) ($request->quantity ?? 1);
+
         $flower = Flower::with('primaryImage')->findOrFail($flowerId);
+
+        // Default harga dan gambar utama produk
+        $price = $flower->discount_price ?? $flower->price;
+        $image = $flower->primaryImage->path ?? null;
+        $variantName = null;
+
+        // Jika user memilih varian (misal Varian A, B, C)
+        if ($variantId) {
+            $variant = FlowerVariant::where('flower_id', $flowerId)->find($variantId);
+            if ($variant) {
+                $price = $variant->price;
+                $image = $variant->image ?? $image; // Pakai gambar varian jika ada, jika tidak pakai gambar utama
+                $variantName = $variant->name;
+            }
+        }
+
+        // Buat kunci unik (cart key) agar produk dengan varian berbeda tersimpan terpisah
+        $cartKey = $flowerId . ($variantId ? '-' . $variantId : '');
 
         $cart = session()->get('cart', []);
 
-        if(isset($cart[$flowerId])) {
-            $cart[$flowerId]['quantity'] += $quantity;
+        if(isset($cart[$cartKey])) {
+            // Jika item dengan varian yang sama sudah ada, tambahkan quantity-nya
+            $cart[$cartKey]['quantity'] += $quantity;
         } else {
-            $cart[$flowerId] = [
-                "name" => $flower->name,
+            // Jika belum ada, masukkan sebagai item baru di keranjang
+            $cart[$cartKey] = [
+                "flower_id" => $flower->id,
+                "variant_id" => $variantId,
+                "name" => $flower->name . ($variantName ? ' (Varian ' . $variantName . ')' : ''),
                 "quantity" => $quantity,
-                "price" => $flower->discount_price ?? $flower->price,
-                "image" => $flower->primaryImage->path ?? null,
+                "price" => $price,
+                "image" => $image,
                 "slug" => $flower->slug
             ];
         }
@@ -41,7 +66,7 @@ class CartController extends Controller
 
     public function destroy($id)
     {
-        $cart = session()->get('cart');
+        $cart = session()->get('cart', []);
         if(isset($cart[$id])) {
             unset($cart[$id]);
             session()->put('cart', $cart);
