@@ -16,10 +16,13 @@ class BranchController extends Controller
 
     public function create()
     {
-        return view('admin.branches.create');
+        $lastBranch = Branch::orderByDesc('id')->first();
+        $defaultWhatsapp = $lastBranch?->whatsapp_number ?: '6289608947994';
+
+        return view('admin.branches.create', compact('defaultWhatsapp'));
     }
 
-   public function store(Request $request)
+    public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:150',
@@ -30,10 +33,13 @@ class BranchController extends Controller
             'maps_url' => 'nullable|string',
         ]);
 
+        $lastBranch = Branch::orderByDesc('id')->first();
+        $fallbackWhatsapp = $lastBranch?->whatsapp_number ?: '6289608947994';
+
         Branch::create([
             'name' => $validated['name'],
             'address' => $validated['address'],
-            'whatsapp_number' => $validated['whatsapp_number'] ?? null,
+            'whatsapp_number' => !empty($validated['whatsapp_number']) ? $validated['whatsapp_number'] : $fallbackWhatsapp,
             'is_active' => $validated['is_active'],
             'opening_hours' => $validated['opening_hours'] ?? '08:00 - 17:00',
             'maps_url' => $validated['maps_url'] ?? '-',
@@ -61,9 +67,9 @@ class BranchController extends Controller
         $branch->update([
             'name' => $validated['name'],
             'address' => $validated['address'],
-            'whatsapp_number' => $validated['whatsapp_number'] ?? null,
+            'whatsapp_number' => $validated['whatsapp_number'] ?? $branch->whatsapp_number,
             'is_active' => $validated['is_active'],
-            'maps_url' => $request->maps_url ?? $branch->maps_url ?? '-', // Mempertahankan atau mengisi maps_url saat update
+            'maps_url' => $request->maps_url ?? $branch->maps_url ?? '-',
         ]);
 
         return redirect()->route('admin.cabang.index')->with('success', 'Cabang berhasil diperbarui.');

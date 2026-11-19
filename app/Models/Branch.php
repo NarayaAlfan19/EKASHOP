@@ -18,6 +18,19 @@ class Branch extends Model
         'is_active' => 'boolean',
     ];
 
+    protected static function booted(): void
+    {
+        static::saving(function (Branch $branch) {
+            if (!empty($branch->whatsapp_number)) {
+                $clean = preg_replace('/[^0-9]/', '', (string) $branch->whatsapp_number);
+                if (str_starts_with($clean, '0')) {
+                    $clean = '62' . substr($clean, 1);
+                }
+                $branch->whatsapp_number = $clean;
+            }
+        });
+    }
+
     public function flowers(): BelongsToMany
     {
         return $this->belongsToMany(Flower::class, 'branch_flower')->withPivot('is_available');

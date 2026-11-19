@@ -32,15 +32,15 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
                 <label class="block text-xs font-semibold text-[#A8A29E] mb-2 uppercase tracking-widest">Nomor Telepon / WhatsApp</label>
-                <input type="text" name="whatsapp_number" value="{{ old('whatsapp_number') }}"
+                <input type="text" name="whatsapp_number" value="{{ old('whatsapp_number', $defaultWhatsapp ?? '6289608947994') }}"
                        class="w-full bg-[#0A0A0A] border border-[#262626] rounded-md p-3 text-sm focus:border-[#C9A24B] text-[#F5F0E6]" placeholder="08xxxxxxxxxx">
             </div>
 
             <div>
                 <label class="block text-xs font-semibold text-[#A8A29E] mb-2 uppercase tracking-widest">Status Cabang</label>
                 <select name="is_active" class="w-full bg-[#0A0A0A] border border-[#262626] rounded-md p-3 text-sm focus:border-[#C9A24B] text-[#F5F0E6]">
-                    <option value="1">Active (Aktif)</option>
-                    <option value="0">Inactive (Nonaktif)</option>
+                    <option value="1" {{ old('is_active', '1') == '1' ? 'selected' : '' }}>Active (Aktif)</option>
+                    <option value="0" {{ old('is_active', '1') == '0' ? 'selected' : '' }}>Inactive (Nonaktif)</option>
                 </select>
             </div>
         </div>
