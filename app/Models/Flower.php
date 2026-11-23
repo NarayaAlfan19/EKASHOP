@@ -47,7 +47,7 @@ class Flower extends Model
     // Relasi khusus untuk mengambil satu gambar utama (dipakai di HomeController katalog)
     public function primaryImage(): HasOne
     {
-        return $this->hasOne(FlowerImage::class)->where('is_primary', true);
+        return $this->hasOne(FlowerImage::class)->where('is_primary', true)->latestOfMany();
     }
 
     // Relasi ke kategori

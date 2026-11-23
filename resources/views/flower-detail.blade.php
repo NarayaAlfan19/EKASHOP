@@ -1,9 +1,16 @@
 @php
-    $primaryImgUrl = $flower->primaryImage ? asset('storage/' . $flower->primaryImage->path) : '';
+    $cleanPrimaryPath = $flower->primaryImage
+        ? str_replace(['public/', 'storage/'], '', $flower->primaryImage->path)
+        : null;
+    $primaryImgUrl = $cleanPrimaryPath ? asset('storage/' . $cleanPrimaryPath) : '';
+
     $firstVariant = $flower->variants->first();
-    
-    // Tentukan gambar awal (jika varian pertama punya gambar, pakai itu. Jika tidak, pakai gambar utama)
-    $initialImg = ($firstVariant && $firstVariant->image) ? asset('storage/' . $firstVariant->image) : $primaryImgUrl;
+    $firstVariantCleanPath = ($firstVariant && $firstVariant->image)
+        ? str_replace(['public/', 'storage/'], '', $firstVariant->image)
+        : null;
+
+    // Tentukan gambar awal (jika varian pertama punya gambar, pakai itu; jika tidak, pakai gambar utama)
+    $initialImg = $firstVariantCleanPath ? asset('storage/' . $firstVariantCleanPath) : $primaryImgUrl;
     $initialPrice = number_format($firstVariant ? $firstVariant->price : ($flower->discount_price ?? $flower->price), 0, ',', '.');
     $initialId = $firstVariant ? $firstVariant->id : '';
 @endphp
@@ -77,8 +84,7 @@
             
             <!-- Galeri Foto (Dinamis Berubah Sesuai Varian yang Dipilih) -->
             <div>
-                <div class="h-96 bg-[#0A0A0A] rounded-xl overflow-hidden mb-4 border border-[#262626] flex items-center justify-center relative group">
-                    <!-- Tampilkan gambar jika activeImage memiliki isi path URL -->
+                <div class="h-96 bg-[#0A0A0A] rounded-xl overflow-hidden border border-[#262626] flex items-center justify-center relative group">
                     <template x-if="activeImage">
                         <img :src="activeImage" 
                              alt="{{ $flower->name }}" 
@@ -120,8 +126,8 @@
                         <div class="flex flex-wrap gap-3">
                             @foreach($flower->variants as $variant)
                                 @php
-                                    // Fallback: Jika varian punya foto, pakai foto varian. Jika kosong, pakai foto utama produk.
-                                    $variantImgUrl = $variant->image ? asset('storage/' . $variant->image) : $primaryImgUrl;
+                                    $vClean = $variant->image ? str_replace(['public/', 'storage/'], '', $variant->image) : null;
+                                    $variantImgUrl = $vClean ? asset('storage/' . $vClean) : $primaryImgUrl;
                                 @endphp
                                 <button type="button" 
                                     @click="selectVariant({{ $variant->price }}, '{{ $variantImgUrl }}', '{{ $variant->id }}')"
@@ -167,7 +173,6 @@
                         @csrf
                         <input type="hidden" name="flower_id" value="{{ $flower->id }}">
                         <input type="hidden" name="quantity" value="1">
-                        <!-- Kirim ID Varian yang dipilih user -->
                         <input type="hidden" name="variant_id" x-model="selectedVariant">
                         
                         <button type="submit" class="w-full bg-[#C9A24B] hover:bg-[#E3C16F] text-black font-bold py-3.5 px-6 rounded-xl shadow-[0_0_15px_rgba(201,162,75,0.2)] transition duration-300 flex items-center justify-center gap-2 uppercase tracking-wider text-sm">
@@ -188,10 +193,13 @@
                 <h3 class="text-2xl font-serif text-[#F5F0E6] mb-6">Produk Terkait</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
                     @foreach($relatedFlowers as $rel)
+                        @php
+                            $relClean = $rel->primaryImage ? str_replace(['public/', 'storage/'], '', $rel->primaryImage->path) : null;
+                        @endphp
                         <div class="bg-[#141414] rounded-xl shadow-md hover:shadow-[0_0_25px_rgba(201,162,75,0.05)] transition overflow-hidden border border-[#262626] flex flex-col justify-between">
                             <div class="h-48 bg-[#0A0A0A]">
-                                @if($rel->primaryImage)
-                                    <img src="{{ asset('storage/' . $rel->primaryImage->path) }}" alt="{{ $rel->name }}" class="w-full h-full object-cover">
+                                @if($relClean)
+                                    <img src="{{ asset('storage/' . $relClean) }}" alt="{{ $rel->name }}" class="w-full h-full object-cover">
                                 @endif
                             </div>
                             <div class="p-4">
@@ -216,10 +224,7 @@
          @keydown.escape.window="isOpen = false">
         
         <div class="relative max-w-5xl w-full max-h-[90vh] flex items-center justify-center">
-            <!-- Tombol Close (X) -->
             <button @click="isOpen = false" class="absolute -top-12 right-0 text-[#F5F0E6] hover:text-[#C9A24B] text-4xl font-light transition">×</button>
-            
-            <!-- Gambar Full Size -->
             <img :src="activeImage" class="max-w-full max-h-[85vh] object-contain rounded-xl border border-[#C9A24B]/30 shadow-2xl">
         </div>
     </div>

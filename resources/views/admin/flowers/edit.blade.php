@@ -1,19 +1,30 @@
 @extends('admin.layouts.app')
 @section('title', 'Edit Bunga')
 
+@php
+    $formattedVariants = $flower->variants->map(function ($v) {
+        return [
+            'id' => $v->id,
+            'name' => $v->name,
+            'price' => (int) round((float) $v->price),
+            'image' => $v->image,
+        ];
+    });
+@endphp
+
 @section('content')
 <div class="max-w-4xl bg-[#141414] border border-[#262626] rounded-xl p-8 shadow-xl" 
      x-data="{ 
          variants: JSON.parse($el.dataset.variants || '[]'),
          defaultImage: $el.dataset.defaultImage || '',
          addVariant() {
-             this.variants.push({ id: null, name: '', price: '' });
+             this.variants.push({ id: null, name: '', price: '', image: null });
          },
          removeVariant(index) {
              this.variants.splice(index, 1);
          }
      }" 
-     data-variants="{{ json_encode($flower->variants ?? []) }}"
+     data-variants="{{ json_encode($formattedVariants) }}"
      data-default-image="{{ $flower->primaryImage ? asset('storage/' . str_replace(['public/', 'storage/'], '', $flower->primaryImage->path)) : '' }}">
     
     @if ($errors->any())
@@ -50,13 +61,13 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
                 <label class="block text-xs font-semibold text-[#A8A29E] mb-2 uppercase tracking-widest">Harga Normal (Rp)</label>
-                <input type="number" name="price" value="{{ old('price', $flower->price) }}" required
+                <input type="number" step="1" min="1" name="price" value="{{ old('price', (int) round((float) $flower->price)) }}" required
                        class="w-full bg-[#0A0A0A] border border-[#262626] rounded-md p-3 text-sm focus:border-[#C9A24B] text-[#F5F0E6]">
             </div>
 
             <div>
                 <label class="block text-xs font-semibold text-[#A8A29E] mb-2 uppercase tracking-widest">Harga Diskon (Opsional)</label>
-                <input type="number" name="discount_price" value="{{ old('discount_price', $flower->discount_price) }}"
+                <input type="number" step="1" min="1" name="discount_price" value="{{ old('discount_price', $flower->discount_price !== null ? (int) round((float) $flower->discount_price) : '') }}"
                        class="w-full bg-[#0A0A0A] border border-[#262626] rounded-md p-3 text-sm focus:border-[#C9A24B] text-[#F5F0E6]">
             </div>
         </div>
@@ -82,12 +93,12 @@
             </div>
         </div>
 
-        <!-- Bagian Kelola Varian Produk (Nama & Harga Saja) -->
+        <!-- Bagian Kelola Varian / Model Pilihan -->
         <div class="border-t border-[#262626] pt-6 mt-6">
             <div class="flex justify-between items-center mb-4">
                 <div>
                     <h3 class="text-base font-serif text-[#C9A24B]">Kelola Varian / Model Pilihan</h3>
-                    <p class="text-xs text-[#A8A29E]">Ubah, hapus, atau tambahkan varian baru (cth: A, B, C beserta harganya).</p>
+                    <p class="text-xs text-[#A8A29E]">Ubah, hapus, atau tambahkan varian baru (cth: A, B, C beserta harga & gambar modelnya).</p>
                 </div>
                 <button type="button" @click="addVariant()" class="px-3 py-1.5 bg-[#262626] text-[#F5F0E6] text-xs font-semibold rounded hover:bg-[#C9A24B] hover:text-black transition">
                     + Tambah Varian Baru
@@ -100,21 +111,30 @@
                         <!-- Hidden input untuk menyimpan ID Varian lama -->
                         <input type="hidden" :name="`variants[${index}][id]`" x-model="variant.id">
 
-                        <div class="w-full md:w-5/12">
+                        <div class="w-full md:w-1/4">
                             <label class="block text-[10px] text-[#A8A29E] mb-1 uppercase tracking-wider">Nama/Label (cth: A)</label>
                             <input type="text" :name="`variants[${index}][name]`" x-model="variant.name" placeholder="A" required class="w-full bg-[#141414] border border-[#262626] rounded p-2 text-sm text-white">
                         </div>
                         
-                        <div class="w-full md:w-5/12">
+                        <div class="w-full md:w-1/4">
                             <label class="block text-[10px] text-[#A8A29E] mb-1 uppercase tracking-wider">Harga (Rp)</label>
-                            <input type="number" :name="`variants[${index}][price]`" x-model="variant.price" placeholder="50000" required class="w-full bg-[#141414] border border-[#262626] rounded p-2 text-sm text-white">
+                            <input type="number" step="1" min="1" :name="`variants[${index}][price]`" x-model="variant.price" placeholder="50000" required class="w-full bg-[#141414] border border-[#262626] rounded p-2 text-sm text-white">
                         </div>
 
-                        <div class="w-full md:w-2/12 flex justify-end">
-                            <button type="button" @click="removeVariant(index)" class="text-red-400 hover:text-red-300 md:mt-5 text-sm font-bold px-3 py-1">
-                                ✕ Hapus
-                            </button>
+                        <div class="w-full md:w-2/4 flex flex-col justify-center">
+                            <label class="block text-[10px] text-[#A8A29E] mb-1 uppercase tracking-wider">Gambar Model Ini (Opsional)</label>
+                            <div class="flex items-center gap-3">
+                                <img :src="variant.image ? `{{ asset('storage') }}/` + variant.image.replace(/^public\//, '').replace(/^storage\//, '') : defaultImage" 
+                                     class="w-12 h-12 object-cover rounded border border-[#262626] bg-[#141414]"
+                                     alt="Preview Varian">
+                                     
+                                <input type="file" :name="`variants[${index}][image]`" accept="image/*" class="w-full text-xs text-[#A8A29E] file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-[#C9A24B] file:text-black">
+                            </div>
                         </div>
+
+                        <button type="button" @click="removeVariant(index)" class="text-red-400 hover:text-red-300 md:mt-5 text-sm font-bold px-2 py-1">
+                            ✕ Hapus
+                        </button>
                     </div>
                 </template>
             </div>

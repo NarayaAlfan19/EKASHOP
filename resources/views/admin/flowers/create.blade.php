@@ -5,7 +5,7 @@
 <div class="max-w-4xl bg-[#141414] border border-[#262626] rounded-xl p-8 shadow-xl" x-data="{ 
     variants: [],
     addVariant() {
-        this.variants.push({ name: '', price: '' });
+        this.variants.push({ name: '', price: '', image: null });
     },
     removeVariant(index) {
         this.variants.splice(index, 1);
@@ -78,12 +78,12 @@
             </div>
         </div>
 
-        <!-- Bagian Varian Produk (Nama & Harga Saja) -->
+        <!-- Bagian Varian / Model Pilihan -->
         <div class="border-t border-[#262626] pt-6 mt-6">
             <div class="flex justify-between items-center mb-4">
                 <div>
                     <h3 class="text-base font-serif text-[#C9A24B]">Varian / Model Pilihan (Opsional)</h3>
-                    <p class="text-xs text-[#A8A29E]">Gunakan ini jika produk memiliki pilihan varian seperti ukuran atau model (cth: A, B, C) beserta harganya.</p>
+                    <p class="text-xs text-[#A8A29E]">Tambahkan varian seperti A, B, C beserta harga dan gambar modelnya (opsional).</p>
                 </div>
                 <button type="button" @click="addVariant()" class="px-3 py-1.5 bg-[#262626] text-[#F5F0E6] text-xs font-semibold rounded hover:bg-[#C9A24B] hover:text-black transition">
                     + Tambah Varian
@@ -93,21 +93,24 @@
             <div class="space-y-4">
                 <template x-for="(variant, index) in variants" :key="index">
                     <div class="flex flex-col md:flex-row gap-4 items-center p-4 bg-[#0A0A0A] rounded-lg border border-[#262626]">
-                        <div class="w-full md:w-5/12">
+                        <div class="w-full md:w-1/4">
                             <label class="block text-[10px] text-[#A8A29E] mb-1 uppercase tracking-wider">Nama/Label (cth: A)</label>
                             <input type="text" :name="`variants[${index}][name]`" x-model="variant.name" placeholder="A" required class="w-full bg-[#141414] border border-[#262626] rounded p-2 text-sm text-white">
                         </div>
                         
-                        <div class="w-full md:w-5/12">
+                        <div class="w-full md:w-1/4">
                             <label class="block text-[10px] text-[#A8A29E] mb-1 uppercase tracking-wider">Harga (Rp)</label>
                             <input type="number" :name="`variants[${index}][price]`" x-model="variant.price" placeholder="50000" required class="w-full bg-[#141414] border border-[#262626] rounded p-2 text-sm text-white">
                         </div>
 
-                        <div class="w-full md:w-2/12 flex justify-end">
-                            <button type="button" @click="removeVariant(index)" class="text-red-400 hover:text-red-300 md:mt-5 text-sm font-bold px-3 py-1">
-                                ✕ Hapus
-                            </button>
+                        <div class="w-full md:w-2/4">
+                            <label class="block text-[10px] text-[#A8A29E] mb-1 uppercase tracking-wider">Gambar Model Ini (Opsional)</label>
+                            <input type="file" :name="`variants[${index}][image]`" accept="image/*" class="w-full text-xs text-[#A8A29E] file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-[#C9A24B] file:text-black">
                         </div>
+
+                        <button type="button" @click="removeVariant(index)" class="text-red-400 hover:text-red-300 md:mt-5 text-sm font-bold px-2 py-1">
+                            ✕
+                        </button>
                     </div>
                 </template>
             </div>
