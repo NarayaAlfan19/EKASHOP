@@ -27,11 +27,6 @@
                 <a href="#" class="relative z-50 bg-[#C9A24B] text-black font-semibold px-4 py-2 rounded-md hover:bg-[#E3C16F] transition text-xs uppercase tracking-wider shadow-[0_0_15px_rgba(201,162,75,0.2)]">
                     Bantu Saya Memilih
                 </a>
-                
-                <!-- Login Admin diubah menjadi teks biasa -->
-                <a href="{{ route('admin.login') }}" class="text-sm font-medium text-[#A8A29E] hover:text-[#C9A24B] transition duration-300">
-                    Login Admin
-                </a>
 
                 <!-- Ikon Keranjang yang terhubung ke CartController & menampilkan jumlah item -->
                 <a href="{{ route('cart.index') }}" class="relative p-2 text-[#A8A29E] hover:text-[#C9A24B] transition duration-300 group flex items-center">
